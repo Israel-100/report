@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Public Incidents</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url(./img/ChatGPT.png);
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .incident {
+            border: 1px solid #ddd;
+            margin: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+
+        .incident img {
+            max-width: 100%;
+            margin-top: 10px;
+            border-radius: 6px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-top: 20px;
+            color: azure;
+        }
+
+        .navbar {
+            width: 100%;
+            background: #182029;
+            color: white;
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+
+        .nav-left {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 15px;
+            padding-right: 20px;
+            /* spacing at the end */
+            transition: max-height 0.3s ease-in-out;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 15px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: background 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-links a.active {
+            background: rgba(255, 255, 255, 0.3);
+            font-weight: bold;
+        }
+
+        /* 🔹 Mobile menu toggle */
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            margin-left: auto;
+
+        }
+
+        .menu-toggle img {
+            width: 60px;
+            /* adjust size */
+            height: 30px;
+            filter: invert(100%);
+            /* makes icons white if they're black */
+        }
+
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: block;
+            }
+        }
+
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+                flex-direction: column;
+                background: #182029;
+                position: absolute;
+                top: 60px;
+                right: 0;
+                width: 230px;
+                padding: 12px;
+                border-radius: 0 0 8px 8px;
+            }
+
+            .nav-links.show {
+                display: flex;
+                animation: slideDown 0.3s ease-in-out;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            @keyframes slideDown {
+                from {
+                    opacity: 0;
+                    transform: translateY(-10px);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        }
+
+        #publicIncidents {
+            color: rgb(7, 7, 6);
+        }
+
+        #top-bar {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin: 10px 0 20px;
+            padding: 8px 12px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        #filterCategory {
+            padding: 8px 12px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background: #fff;
+            cursor: pointer;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        #filterCategory:hover {
+            border-color: #888;
+        }
+
+        #filterCategory:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 4px rgba(0, 123, 255, 0.4);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="navbar">
+        <div class="nav-left">Incident Reporter</div>
+
+        <!-- Toggle Button -->
+        <button class="menu-toggle" onclick="toggleMenu()" aria-label="Menu">
+            <!-- Your downloaded hamburger SVG -->
+            <img id="menuIcon" src="img/hamburger-menu-mobile-svgrepo-com.svg" alt="Menu" />
+            <!-- Your downloaded close (X) SVG -->
+            <img id="closeIcon" src="img/burger-menu-right-svgrepo-com.svg" alt="Close" style="display: none;" />
+        </button>
+
+        <div class="nav-links">
+            <!-- <a href="signup.html">Signup</a>
+                <a href="login.html">Login</a> -->
+            <a href="index.html">Home </a>
+            <a href="addreport.html">Add Incident</a>
+            <a href="publicv.html">View Incidents</a>
+            <a href="#" id="logoutBtn">Logout</a>
+        </div>
+    </div>
+    <h2>INCIDENTS</h2>
+    <div id="top-bar">
+        <select id="filterCategory" title="categories" onchange="loadPublicIncidents(this.value)">
+            <option value="">All Categories</option>
+            <option value="18">Accident</option>
+            <option value="19">Fire</option>
+            <option value="28">Robbery</option>
+            <option value="20">Traffic</option>
+        </select>
+    </div>
+
+    <div id="publicIncidents">
+        <p style="text-align:center;">Loading...</p>
+    </div>
+    <script>
+       async function loadPublicIncidents(categoryId = "") {
+            try {
+                let url = "https://report.byethost24.com/wp-json/wp/v2/posts?_embed&status=publish";
+                if (categoryId && categoryId !== "") {
+                    url += `&categories=${categoryId}`;
+                }
+
+                let response = await fetch(url);
+                let posts = await response.json();
+                let container = document.getElementById("publicIncidents");
+                container.innerHTML = "";
+
+                if (!Array.isArray(posts) || posts.length === 0) {
+                    container.innerHTML = "<p style='text-align:center;'>No public incidents found.</p>";
+                    return;
+                }
+
+                posts.forEach(post => {
+                    // ✅ Inline image already inside content.rendered
+                    let postContent = post.content.rendered;
+
+                    // ✅ Fallback featured image (only if no inline <img> in content)
+                    if (!postContent.includes("<img") && post._embedded && post._embedded['wp:featuredmedia']) {
+                        let featured = post._embedded['wp:featuredmedia'][0];
+                        postContent = `<img src="${featured.source_url}" alt="Incident image" style="max-width:100%; border-radius:8px; margin-bottom:10px;">`
+                            + postContent;
+                    }
+
+                    // ✅ Categories
+                    let categories = [];
+                    if (post._embedded && post._embedded["wp:term"]) {
+                        categories = post._embedded["wp:term"][0].map(cat => cat.name);
+                    }
+                    let catHtml = categories.length ? `<p><strong>Category:</strong> ${categories.join(", ")}</p>` : "";
+
+                    // ✅ Date
+                    let date = new Date(post.date).toLocaleString();
+
+                    container.innerHTML += `
+              <div class="incident">
+                <h3>${post.title.rendered}</h3>
+                <p class="date">📅 ${date}</p>
+                <div>${postContent}</div>
+                ${catHtml}
+              </div>
+            `;
+                });
+
+            } catch (err) {
+                document.getElementById("publicIncidents").innerHTML =
+                    "<p style='color:red;text-align:center;'>Error loading incidents.</p>";
+                console.error(err);
+            }
+        }
+
+        // Run on page load
+        document.addEventListener("DOMContentLoaded", () => loadPublicIncidents(""));
+
+
+        function toggleMenu() {
+            const navLinks = document.querySelector(".nav-links");
+            const menuIcon = document.getElementById("menuIcon");
+            const closeIcon = document.getElementById("closeIcon");
+
+            navLinks.classList.toggle("show");
+
+            if (navLinks.classList.contains("show")) {
+                menuIcon.style.display = "none";
+                closeIcon.style.display = "block";
+            } else {
+                menuIcon.style.display = "block";
+                closeIcon.style.display = "none";
+            }
+        }
+
+
+        // 🔹 Logout button logic
+        if (localStorage.getItem("token")) {
+            document.getElementById("logoutBtn").style.display = "inline";
+        } else {
+            document.getElementById("logoutBtn").style.display = "inline";
+        }
+        document.getElementById("logoutBtn").addEventListener("click", () => {
+            localStorage.removeItem("token");
+            alert("Logged out!");
+            window.location.href = "index.html";
+        });
+    </script>
+    <script src="cordova.js"></script>
+<script type="module" src="js/index.js"></script>
+
+
+</body>
+
+</html>
